@@ -1,0 +1,70 @@
+{% include "app/base/header.html" %}
+{% block js %}
+<script>
+    function AceptarPedido(url){
+        Swal.fire({
+            "title": "¿Confirmar pedido?",
+            "text": "Al aceptar el pedido, se enviará la orden de compra al cliente.",
+            "icon": "question",
+            "showCancelButton": true,
+            "cancelButtonText": "Volver",
+            "confirmButtonText": "Sí, aceptar pedido",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url; // Redirige a la URL de aceptar pedido
+            }
+        });
+    }
+
+    function RechazarPedido(url){
+        Swal.fire({
+            "title": "¿Rechazar pedido?",
+            "text": "Al rechazar el pedido, se le notificará al cliente.",
+            "icon": "question",
+            "showCancelButton": true,
+            "cancelButtonText": "Volver",
+            "confirmButtonText": "Sí, rechazar pedido",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url; // Redirige a la URL de rechazar pedido
+            }
+        });
+    }
+</script>
+{% endblock %}
+
+<main>
+    <div class="container">
+        <h1>Gestionar Pedidos</h1>
+        <table class="pedido-table">
+            <thead>
+                <tr>
+                    <th>ID del Pedido</th>
+                    <th>Total</th>
+                    <th>Fecha del Pedido</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pedido in pedidos %}
+                    <tr>
+                        <td>{{ pedido.id }}</td>
+                        <td>${{ pedido.total }}</td>
+                        <td>{{ pedido.fecha_pedido }}</td>
+                        <td>{{ pedido.estado }}</td>
+                        <td>
+                            <a href="#" onclick="AceptarPedido('{% url 'confirmar_pedido' pedido.id %}')" class="btn-success btn">Aceptar Pedido</a>
+                            <a href="#" onclick="RechazarPedido('{% url 'rechazar_pedido' pedido.id %}')" class="btn-danger btn">Rechazar Pedido</a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5">No hay pedidos para gestionar.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</main>
+{% include "app/base/footer.html" %}

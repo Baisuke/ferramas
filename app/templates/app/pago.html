@@ -1,0 +1,83 @@
+{% include "app/base/header.html" %}
+{% load humanize %}
+{% block js %}
+<script>
+    function ConfirmarPedido(formId){
+        Swal.fire({
+            "title": "¿Confirmar pedido?",
+            "text": "Al aceptar su pedido, este pasará a ser revisado por un vendedor",
+            "icon": "question",
+            "showCancelButton": true,
+            "cancelButtonText": "No, cancelar pedido",
+            "confirmButtonText": "Sí, confirmar pedido",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById(formId).submit(); // Envía el formulario
+            }
+        });
+    }
+</script>
+{% endblock %}
+
+<main>
+    <div align="center">
+        <h1>Resumen del Pedido</h1>
+    </div>
+    <div class="alert alert-primary" role="alert">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th scope="row" colspan="4" class="text-center">Resumen</th>
+                </tr>
+                <tr>
+                    <th scope="col"></th>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Cantidad</th>
+                    <th scope="col">Precio</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if request.session.carrito %}
+                {% for key, value in request.session.carrito.items %}
+                <tr>
+                    <td><img src="{{ value.imagen }}" alt="{{ value.nombre }}" style="width: 50px; height: auto;"></td>
+                    <td>{{ value.nombre }}</td>
+                    <td align="right">{{ value.cantidad }}</td>
+                    <td align="right">${{ value.acumulado|intcomma }}</td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="4">
+                        <div class="alert alert-danger text-center">Sin Producto</div>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        <hr>
+    </div>
+
+    <h3 align="right">Total: ${{ total }}</h3>
+
+    <form id="pedidoForm" method="POST" action="{% url 'realizar_pedido' %}">
+        {% csrf_token %}
+        <div align="center">
+            <label for="tipo_pago">Tipo de pago:</label>
+        </div>
+        <div align="center">
+            <select name="tipo_pago" required>
+                <option value="tarjeta">WebPay (débito/crédito)</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="transferencia">Transferencia</option>
+            </select>
+        </div>
+        <br>
+        
+        <div align="center"> 
+            <a href="#" onclick="ConfirmarPedido('pedidoForm')" class="btn btn-primary"> Confirmar Pedido</a>
+        </div>
+    </form>
+    
+</main>
+{% include "app/base/footer.html" %}

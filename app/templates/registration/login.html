@@ -1,0 +1,20 @@
+{% load crispy_forms_tags %}
+{% include "app/base/header.html" %}
+<style>
+    .card-link {
+        color: black; /* Cambia el color del texto a negro */
+    }
+</style>
+<main>
+    <form action="" method="post">
+        <div align="center" class="card-title">
+            <h3>Login de usuario</h3>
+        </div>
+        {% csrf_token %}
+        {{ form | crispy }}
+        <button type="submit">Iniciar Sesión</button>
+        <a href="{% url 'register' %}" class="card-link"> Registrarse</a>
+    </form>
+</main>
+
+{% include "app/base/footer.html" %}

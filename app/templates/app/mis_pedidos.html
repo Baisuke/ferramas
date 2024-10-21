@@ -1,0 +1,44 @@
+{% include "app/base/header.html" %}
+<main>
+    <div class="container">
+        <h1>Mis Pedidos</h1>
+        <table class="pedido-table">
+            <thead>
+                <tr>
+                    <th>ID del Pedido</th>
+                    <th>Total</th>
+                    <th>Fecha del Pedido</th>
+                    <th>Estado</th>
+                    <th>Productos</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pedido in pedidos %}
+                    <tr>
+                        <td>{{ pedido.id }}</td>
+                        <td>${{ pedido.total }}</td>
+                        <td>{{ pedido.fecha_pedido }}</td>
+                        <td>{{ pedido.estado }}</td>
+                        <td>
+                            <ul>
+                                {% for producto in pedido.productos %}
+                                    <li>{{ producto.producto.nombre }} - Cantidad: {{ producto.cantidad }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                    </tr>
+                    <td>
+                        {% if pedido.estado == 'aceptado' %}
+                            <a href="{% url 'pagar_pedido' pedido.id %}" class="btn btn-primary">Pagar Ahora</a>
+                        {% endif %}
+                    </td>
+                {% empty %}
+                    <tr>
+                        <td colspan="5">No tienes pedidos aún.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</main>
+{% include "app/base/footer.html" %}
