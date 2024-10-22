@@ -156,8 +156,9 @@ def mis_pedidos(request):
     return render(request, 'app/mis_pedidos.html', {'pedidos': pedidos})
 
 
-@permission_required('app/change_pedidos')
-@login_required
+
+
+@permission_required('app.change_pedidos')
 def listar_pedidos(request):
 
     pedidos = Pedidos.objects.all()
@@ -168,14 +169,14 @@ def listar_pedidos(request):
     return render(request, 'app/listar_pedidos.html', {'pedidos': pedidos})
 
 
-@permission_required('app/change_pedidos')
+@permission_required('app.change_pedidos')
 def confirmar_pedido(request, pedido_id):
     pedido = get_object_or_404(Pedidos, id=pedido_id)
     pedido.estado = 'aceptado'  # Actualiza el estado a aceptado
     pedido.save()
     return redirect('listar_pedidos')
 
-@permission_required('app/change_pedidos')
+@permission_required('app.change_pedidos')
 def rechazar_pedido(request, pedido_id):
     pedido = get_object_or_404(Pedidos, id=pedido_id)
     pedido.estado = 'rechazado'  # Actualiza el estado a rechazado
