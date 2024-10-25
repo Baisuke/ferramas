@@ -18,4 +18,5 @@ urlpatterns = [
     path('pagar_pedido/<int:pedido_id>/', pagar_pedido, name='pagar_pedido'),
     path('perfil/', perfil_usuario, name='perfil_usuario'),
     path('pago_exitoso/', pago_exitoso, name='pago_exitoso'),
+    
 ]

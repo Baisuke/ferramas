@@ -1,3 +1,4 @@
+from audioop import reverse
 from datetime import datetime
 from django.http import HttpResponse
 from http.client import HTTPResponse
@@ -15,7 +16,14 @@ from django.shortcuts import render
 from .models import Pedidos
 from django.shortcuts import render, redirect
 from .models import Pedidos
-from transbank.webpay.webpay_plus.transaction import Transaction
+from transbank.webpay.webpay_plus.transaction import Transaction,WebpayOptions
+from transbank.common.integration_type import IntegrationType
+from django.urls import reverse
+
+CommerCode = '597055555532'
+ApiKeySecret = '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C'
+options = WebpayOptions(CommerCode,ApiKeySecret,IntegrationType.TEST)
+transaction = Transaction(options)
 
 
 def home(request):
@@ -258,33 +266,47 @@ def perfil_usuario(request):
     
     return render(request, 'app/perfil_usuario.html', context)
 
+
+
+@login_required
 def pagar_pedido(request, pedido_id):
-
     pedido = get_object_or_404(Pedidos, id=pedido_id)
-
-    buy_order = str(pedido.id) 
-    session_id = "sesion_456" 
-    amount = pedido.total 
-    return_url = request.build_absolute_uri('app/pago_exitoso/') 
+    transaction = Transaction(options)
 
     try:
-        # Crear la transacción
-        transaction = Transaction.create(
-            buy_order=buy_order,
-            session_id=session_id,
-            amount=amount,
-            return_url=return_url
+        # Crear la transacción con la URL de retorno correcta
+        response = transaction.create(
+            buy_order=str(pedido.id),
+            session_id=request.session.session_key,
+            amount=pedido.total,
+            return_url=request.build_absolute_uri(reverse('pago_exitoso'))  # Asegúrate de usar reverse
         )
-        return redirect(transaction.url)  # Redirigir al usuario a la URL de pago de Transbank
+
+        # Imprimir la URL para verificar
+        print(f"Redirecting to: {response['url']}?token_ws={response['token']}")
+        return redirect(f"{response['url']}?token_ws={response['token']}")
     except Exception as e:
-        # Manejar el error adecuadamente
         print(f"Error al crear la transacción: {e}")
-        return HttpResponse("Hubo un error al procesar el pago.")
+        messages.error(request, "Ocurrió un error al procesar el pago. Por favor, inténtelo de nuevo.")
+        return redirect('mis_pedidos')
     
+
+@login_required
 def pago_exitoso(request):
-    return render(request, 'app/pago_exitoso.html')  # Crea una plantilla para mostrar el mensaje de éxito
+    token_ws = request.GET.get('token_ws')  # Obtener el token de la URL
+    transaction = Transaction(options)  # Asegúrate de que 'options' esté definido
+    result = transaction.commit(token_ws)  # Realiza la transacción con el token
 
-
+    if result['status'] == 'AUTHORIZED':
+        # Aquí se supone que el ID del pedido está en 'buy_order'
+        pedido_id = int(result['buy_order'])  # Convierte a entero
+        pedido = get_object_or_404(Pedidos, id=pedido_id)  # Obtiene el pedido basado en el ID
+        pedido.estado = 'pagado'  # Asumiendo que el campo se llama 'estado'
+        pedido.save()
+        # Renderiza la plantilla con el pedido
+        return render(request, 'app/pago_exitoso.html', {'pedido': pedido})
+    else:
+        return render(request, 'app/pago_fallido.html')  # Si no está autorizado, redirige a la página de error
 
 
 

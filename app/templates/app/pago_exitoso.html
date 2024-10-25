@@ -13,8 +13,11 @@
         </ul>
         <h3>Productos</h3>
         <ul>
-            {% for producto in pedido.productos %}
-                <li>{{ producto.producto.nombre }} - Cantidad: {{ producto.cantidad }}</li>
+            {% for producto in pedido.productopedido_set.all %}  <!-- Usando el related name -->
+                <li>
+                    <img src="{{ producto.producto.img.url }}" alt="{{ producto.producto.nombre }}" style="width: 100px; height: auto;">
+                    {{ producto.producto.nombre }} - Cantidad: {{ producto.cantidad }}
+                </li>
             {% endfor %}
         </ul>
     </div>

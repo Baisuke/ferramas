@@ -55,7 +55,11 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if pedido.estado == 'aceptado' %}
+                            {% if pedido.estado == 'pagado' %}
+                                <span style="color: green;">
+                                    <i class="fas fa-check-circle"></i> Pagado
+                                </span>
+                            {% elif pedido.estado == 'aceptado' %}
                                 <a href="{% url 'pagar_pedido' pedido.id %}" class="btn btn-primary">Pagar Ahora</a>
                             {% endif %}
                         </td>
