@@ -1,0 +1,18 @@
+{% include "app/base/header.html" %}
+<main>
+    <div class="container">
+        <h1>Pago Fallido</h1>
+        <p>Lo sentimos, el pago no se ha completado.</p>
+        {% if pedido %}
+            <h2>Detalles de tu Pedido</h2>
+            <ul>
+                <li>ID del Pedido: {{ pedido.id }}</li>
+                <li>Total: ${{ pedido.total }}</li>
+                <li>Estado: {{ pedido.estado }}</li>
+            </ul>
+        {% else %}
+            <p>No se encontró información del pedido.</p>
+        {% endif %}
+    </div>
+</main>
+{% include "app/base/footer.html" %}

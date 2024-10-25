@@ -42,6 +42,7 @@
                     <th>ID del Pedido</th>
                     <th>Total</th>
                     <th>Fecha del Pedido</th>
+                    <th>Total en Dólares</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
@@ -52,10 +53,17 @@
                         <td>{{ pedido.id }}</td>
                         <td>${{ pedido.total }}</td>
                         <td>{{ pedido.fecha_pedido }}</td>
+                        <td>{{ pedido.total_en_dolares|floatformat:2 }} USD</td>
                         <td>{{ pedido.estado }}</td>
                         <td>
-                            <a href="#" onclick="AceptarPedido('{% url 'confirmar_pedido' pedido.id %}')" class="btn-success btn">Aceptar Pedido</a>
-                            <a href="#" onclick="RechazarPedido('{% url 'rechazar_pedido' pedido.id %}')" class="btn-danger btn">Rechazar Pedido</a>
+                            {% if pedido.estado == 'pendiente' %}
+                                <a href="{% url 'confirmar_pedido' pedido.id %}" class="btn-success btn">Aceptar</a>
+                                <a href="{% url 'rechazar_pedido' pedido.id %}" class="btn-danger btn">Rechazar</a>
+                            {% elif pedido.estado == 'aceptado' %}
+                                <i class="fa fa-check-circle text-success"></i> <!-- Ícono verde para aceptado -->
+                            {% elif pedido.estado == 'rechazado' %}
+                                <i class="fa fa-times-circle text-danger"></i> <!-- Ícono rojo para rechazado -->
+                            {% endif %}
                         </td>
                     </tr>
                 {% empty %}

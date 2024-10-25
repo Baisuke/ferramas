@@ -2,6 +2,18 @@
 <main>
     <div class="container">
         <h1>Mis Pedidos</h1>
+        <form method="post" class="mb-3">
+            {% csrf_token %}
+            <label for="moneda">Selecciona la moneda:</label>
+            <select name="moneda" id="moneda">
+                <option value="dolar">Dólar ($)</option>
+                <option value="euro">Euro (€)</option>
+                <option value="libra">Libra (£)</option>
+                <option value="yen">Yen (¥)</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Convertir</button>
+        </form>
+
         <table class="pedido-table">
             <thead>
                 <tr>
@@ -9,7 +21,10 @@
                     <th>Total</th>
                     <th>Fecha del Pedido</th>
                     <th>Estado</th>
+                    <th>Método de pago</th>
                     <th>Productos</th>
+                    <th>Total Convertido</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -19,6 +34,7 @@
                         <td>${{ pedido.total }}</td>
                         <td>{{ pedido.fecha_pedido }}</td>
                         <td>{{ pedido.estado }}</td>
+                        <td>{{ pedido.tipo_pago }}</td>
                         <td>
                             <ul>
                                 {% for producto in pedido.productos %}
@@ -26,15 +42,27 @@
                                 {% endfor %}
                             </ul>
                         </td>
+                        <td>
+                            {% if pedido.total_convertido %}
+                                {{ pedido.total_convertido|floatformat:2 }} 
+                                {% if pedido.moneda_seleccionada == 'dolar' %} $ 
+                                {% elif pedido.moneda_seleccionada == 'euro' %} € 
+                                {% elif pedido.moneda_seleccionada == 'libra' %} £ 
+                                {% elif pedido.moneda_seleccionada == 'yen' %} ¥ 
+                                {% endif %}
+                            {% else %}
+                                No convertido
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if pedido.estado == 'aceptado' %}
+                                <a href="{% url 'pagar_pedido' pedido.id %}" class="btn btn-primary">Pagar Ahora</a>
+                            {% endif %}
+                        </td>
                     </tr>
-                    <td>
-                        {% if pedido.estado == 'aceptado' %}
-                            <a href="{% url 'pagar_pedido' pedido.id %}" class="btn btn-primary">Pagar Ahora</a>
-                        {% endif %}
-                    </td>
                 {% empty %}
                     <tr>
-                        <td colspan="5">No tienes pedidos aún.</td>
+                        <td colspan="9">No tienes pedidos aún.</td>
                     </tr>
                 {% endfor %}
             </tbody>

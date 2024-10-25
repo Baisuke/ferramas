@@ -1,0 +1,17 @@
+{% include "app/base/header.html" %}
+<main>
+    <body>
+        <h1>Perfil de Usuario</h1>
+    
+        <p><strong>Nombre:</strong> {{ nombre }}</p>
+        <p><strong>Correo:</strong> {{ correo }}</p>
+    
+        {% if not es_staff %}
+            <p><strong>Pedidos Aceptados:</strong> {{ pedidos_aceptados }}</p>
+            <p><strong>Pedidos Pagados:</strong> {{ pedidos_pagados }}</p>
+        {% else %}
+            <p><strong>Rol Asignado:</strong> {{ rol }}</p>
+        {% endif %}
+    </body>
+</main>
+{% include "app/base/footer.html" %}

@@ -1,0 +1,22 @@
+{% include "app/base/header.html" %}
+<main>
+    <div class="container">
+        <h1>Pago Exitoso</h1>
+        <p>¡Gracias por tu compra!</p>
+        <h2>Detalles de tu Pedido</h2>
+        <ul>
+            <li>ID del Pedido: {{ pedido.id }}</li>
+            <li>Total: ${{ pedido.total }}</li>
+            <li>Fecha del Pedido: {{ pedido.fecha_pedido }}</li>
+            <li>Estado: {{ pedido.estado }}</li>
+            <li>Método de Pago: {{ pedido.tipo_pago }}</li>
+        </ul>
+        <h3>Productos</h3>
+        <ul>
+            {% for producto in pedido.productos %}
+                <li>{{ producto.producto.nombre }} - Cantidad: {{ producto.cantidad }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</main>
+{% include "app/base/footer.html" %}

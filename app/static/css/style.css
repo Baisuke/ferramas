@@ -43,6 +43,8 @@ body {
     background-color: #F5F5F5;
     display: flex;
     flex-direction: column; 
+    color: #252525;
+    font-family: Arial, sans-serif;
 }
 
 header {
@@ -785,4 +787,76 @@ h1 {
 
 .btn-reject:hover {
     background-color: #c82333; 
+}
+/* Estructura General */
+.profile-container {
+    background-color: #F5F5F5;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    margin: 40px auto;
+    font-family: Arial, sans-serif;
+}
+
+.profile-title {
+    color: #252525;
+    font-size: 1.8rem;
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+.profile-info p {
+    color: #333;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 10px 0;
+}
+
+.profile-info strong {
+    color: #FE6A00;
+}
+
+/* Estilo para botones */
+.boton-item {
+    display: inline-block;
+    margin: 10px 0;
+    padding: 10px 20px;
+    background-color: #FE6A00;
+    color: #FFFFFF;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 1rem;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.boton-item:hover {
+    background-color: #FF8C30;
+}
+
+/* Ajustes en botones de alerta */
+.alert-primary {
+    background-color: #F5F5F5;
+    color: #252525;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+
+
+h1, h2, h3, h5, p {
+    color: #252525;
+}
+
+.btn-primary {
+    background-color: #FE6A00;
+    color: #FFFFFF;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #FF8C30;
 }
