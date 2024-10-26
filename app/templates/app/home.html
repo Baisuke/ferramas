@@ -16,6 +16,20 @@
 
 <body>
 <header>
+    {% if messages %}
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                {% for message in messages %}
+                    Swal.fire({
+                        icon: "{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'success' %}success{% else %}info{% endif %}",
+                        title: "{{ message }}",
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                {% endfor %}
+            });
+        </script>
+    {% endif %}
     <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'home' %}">
@@ -121,25 +135,28 @@
         </div>
     </div>
     
-    <div class="row tm-mb-90 tm-gallery">
-        {% for p in productos %}
-            <div class="col-xl-3 col-lg-2 col-md-4 col-sm-4 col-12 mb-5">
-                <figure class="effect-ming tm-video-item">
-                    {% if p.img %}
-                        <img src="{{ p.img.url }}" alt="Image" class="product-image">
-                    {% endif %}
-                    <figcaption class="align-items-center justify-content-center">
+        <div class="row tm-mb-90 tm-gallery">
+            {% for p in productos %}
+                <div class="col-xl-3 col-lg-2 col-md-4 col-sm-4 col-12 mb-5">
+                    <div class="items-p">
+                        <figure class="effect-ming tm-video-item">
+                            {% if p.img %}
+                                <img src="{{ p.img.url }}" alt="Image" class="product-image">
+                            {% endif %}
+                            <figcaption class="align-items-center justify-content-center">
+                                <h3>FERRAMAS©</h3>
+                            </figcaption>                 
+                        </figure>
+                    <div class="desc_item">
                         <h3>{{ p.nombre }}</h3>
-                        <h2>${{ p.precio | intcomma }}</h2>
-                        <h3>FERRAMAS©</h3>
-                    </figcaption>                 
-                </figure>
-                <h3>${{ p.precio | intcomma }}</h3>
-                <a href="{% url 'add' p.id %}" class="btn btn-primary boton-item">Agregar al carrito</a>
-            </div>
-        {% endfor %}
-    </div>
-
+                        <h3>${{ p.precio | intcomma }}</h3>
+                        <a href="{% url 'add' p.id %}" class="btn btn-primary boton-item">Agregar al carrito</a>
+                    </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    
     <!-- Paginación -->
     <div class="row tm-mb-90">
         <div class="col-12 d-flex justify-content-between align-items-center tm-paging-col">

@@ -34,6 +34,17 @@
 {% endblock %}
 
 <main>
+    <form method="post" class="mb-3">
+        {% csrf_token %}
+        <label for="moneda">Selecciona la moneda:</label>
+        <select name="moneda" id="moneda">
+            <option value="dolar">Dólar ($)</option>
+            <option value="euro">Euro (€)</option>
+            <option value="libra">Libra (£)</option>
+            <option value="yen">Yen (¥)</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Convertir</button>
+    </form>
     <div class="container">
         <h1>Gestionar Pedidos</h1>
         <table class="pedido-table">
@@ -42,7 +53,7 @@
                     <th>ID del Pedido</th>
                     <th>Total</th>
                     <th>Fecha del Pedido</th>
-                    <th>Total en Dólares</th>
+                    <th>Total Conversión</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
@@ -53,16 +64,34 @@
                         <td>{{ pedido.id }}</td>
                         <td>${{ pedido.total }}</td>
                         <td>{{ pedido.fecha_pedido }}</td>
-                        <td>{{ pedido.total_en_dolares|floatformat:2 }} USD</td>
+                        <td align="center">
+                            {% if pedido.total_convertido %}
+                                <center>
+                                    {{ pedido.total_convertido|floatformat:2 }}
+                                    {% if pedido.moneda_seleccionada == 'dolar' %} $ 
+                                    {% elif pedido.moneda_seleccionada == 'euro' %} € 
+                                    {% elif pedido.moneda_seleccionada == 'libra' %} £ 
+                                    {% elif pedido.moneda_seleccionada == 'yen' %} ¥ 
+                                    {% endif %}
+                                </center>
+                            {% else %}
+                                <center>No convertido</center>
+                            {% endif %}
+                        </td>
+                        
                         <td>{{ pedido.estado }}</td>
                         <td>
                             {% if pedido.estado == 'pendiente' %}
-                                <a href="{% url 'confirmar_pedido' pedido.id %}" class="btn-success btn">Aceptar</a>
-                                <a href="{% url 'rechazar_pedido' pedido.id %}" class="btn-danger btn">Rechazar</a>
+                                <a href="#" onclick="AceptarPedido('{% url 'confirmar_pedido' pedido.id %}')" class="btn-success btn">Aceptar</a>
+                                <a href="#" onclick="RechazarPedido('{% url 'rechazar_pedido' pedido.id %}')" class="btn-danger btn">Rechazar</a>
                             {% elif pedido.estado == 'aceptado' %}
-                                <i class="fa fa-check-circle text-success"></i> <!-- Ícono verde para aceptado -->
+                                <i class="fa fa-check-circle text-success"></i> 
                             {% elif pedido.estado == 'rechazado' %}
-                                <i class="fa fa-times-circle text-danger"></i> <!-- Ícono rojo para rechazado -->
+                                <i class="fa fa-times-circle text-danger"></i> 
+                            {% elif pedido.estado == 'pagado' %}
+                                <span style="color: green;">
+                                    <i class="fas fa-check-circle"></i> Pagado
+                                </span>    
                             {% endif %}
                         </td>
                     </tr>

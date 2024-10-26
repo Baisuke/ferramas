@@ -3,16 +3,21 @@
     <div class="container">
         <h1>Pago Fallido</h1>
         <p>Lo sentimos, el pago no se ha completado.</p>
-        {% if pedido %}
-            <h2>Detalles de tu Pedido</h2>
-            <ul>
-                <li>ID del Pedido: {{ pedido.id }}</li>
-                <li>Total: ${{ pedido.total }}</li>
-                <li>Estado: {{ pedido.estado }}</li>
-            </ul>
-        {% else %}
-            <p>No se encontró información del pedido.</p>
-        {% endif %}
+        <ul>
+            <li>ID del Pedido: {{ pedido.id }}</li>
+            <li>Total: ${{ pedido.total }}</li>
+            <li>Estado: {{ pedido.estado }}</li>
+            <li>Método de Pago: {{ pedido.tipo_pago }}</li>
+        </ul>
+        <h3>Productos</h3>
+        <ul>
+            {% for producto in pedido.productopedido_set.all %} 
+                <li>
+                    <img src="{{ producto.producto.img.url }}" alt="{{ producto.producto.nombre }}" style="width: 100px; height: auto;">
+                    {{ producto.producto.nombre }} - Cantidad: {{ producto.cantidad }}
+                </li>
+            {% endfor %}
+        </ul>
     </div>
 </main>
 {% include "app/base/footer.html" %}

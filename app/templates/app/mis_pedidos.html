@@ -6,10 +6,10 @@
             {% csrf_token %}
             <label for="moneda">Selecciona la moneda:</label>
             <select name="moneda" id="moneda">
-                <option value="dolar">Dólar ($)</option>
-                <option value="euro">Euro (€)</option>
-                <option value="libra">Libra (£)</option>
-                <option value="yen">Yen (¥)</option>
+                <option value="dolar" {% if moneda_seleccionada == "dolar" %}selected{% endif %}>Dólar ($)</option>
+                <option value="euro" {% if moneda_seleccionada == "euro" %}selected{% endif %}>Euro (€)</option>
+                <option value="libra" {% if moneda_seleccionada == "libra" %}selected{% endif %}>Libra (£)</option>
+                <option value="yen" {% if moneda_seleccionada == "yen" %}selected{% endif %}>Yen (¥)</option>
             </select>
             <button type="submit" class="btn btn-primary">Convertir</button>
         </form>

@@ -1,4 +1,5 @@
 from app.models import Producto
+from django.contrib import messages
 
 
 class Carrito:
@@ -9,7 +10,7 @@ class Carrito:
             carrito = self.session["carrito"] = {}
         self.carrito = carrito
 
-    def add(self, producto):
+    def add(self, producto,request):
         producto_id = str(producto.id)
         if producto_id not in self.carrito:
             self.carrito[producto_id] = {
@@ -19,11 +20,12 @@ class Carrito:
                 'producto_id': producto_id,
                 'cantidad': 1
             }
+            
         else:
             self.carrito[producto_id]['cantidad'] += 1
 
         self.session.modified = True
-
+        messages.success(request, f'Producto "{producto.nombre}" agregado exitosamente al carrito.')
 
     def __iter__(self):
         for item_id in self.carrito:

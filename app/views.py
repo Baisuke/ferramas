@@ -19,6 +19,7 @@ from .models import Pedidos
 from transbank.webpay.webpay_plus.transaction import Transaction,WebpayOptions
 from transbank.common.integration_type import IntegrationType
 from django.urls import reverse
+from .carrito import Carrito
 
 CommerCode = '597055555532'
 ApiKeySecret = '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C'
@@ -54,32 +55,62 @@ def home(request):
 
 @login_required
 def pago(request):
+    pedidos = Pedidos.objects.filter(cliente=request.user)
     carrito = Carrito(request)
     total = 0
 
+    # Configuración para la API y valores de monedas
+    siete = bcchapi.Siete(file="credenciales.txt")
+    fecha_actual = datetime.now().strftime("%Y-%m-%d")
+    series_monedas = {
+        "dolar": "F073.TCO.PRE.Z.D",
+        "euro": "F072.CLP.EUR.N.O.D", 
+        "libra": "F072.CLP.GBP.N.O.D",  
+        "yen": "F072.CLP.JPY.N.O.D"
+    }
+    valores_monedas = {}
 
+    # Obtener y validar valores de las monedas
+    for moneda, serie in series_monedas.items():
+        try:
+            retcuadro = siete.cuadro(series=[serie], nombres=[moneda], desde=fecha_actual, hasta=fecha_actual)
+            valor_moneda = retcuadro.iloc[0, 0]
+            if valor_moneda is None or valor_moneda <= 0:
+                raise ValueError(f"El valor de {moneda} no es válido.")
+            valores_monedas[moneda] = valor_moneda
+        except Exception as e:
+            print(f"Error al obtener el valor de {moneda}: {e}")
+            valores_monedas[moneda] = 1  # Valor predeterminado si ocurre error
+
+    # Calcular el total de los productos en el carrito
     productos_del_carrito = []
-
     for item in carrito:
-        producto = item['producto'] 
+        producto = item['producto']
         cantidad = item['cantidad']
         subtotal = producto.precio * cantidad
         total += subtotal
-        
         productos_del_carrito.append({
             'producto': producto,
             'cantidad': cantidad,
             'subtotal': subtotal,
         })
 
+    # Moneda seleccionada por el usuario y conversión del total acumulado
+    moneda_seleccionada = request.POST.get('moneda', 'dolar')  # Predeterminado a 'dolar'
+    total_convertido = total / valores_monedas.get(moneda_seleccionada, 1)
+    total_convertido = round(total_convertido, 2)  # Redondeo a 2 decimales
+
+    # Contexto para el template
     context = {
+        'pedidos': pedidos,
+        'valores_monedas': valores_monedas,
         'productos': productos_del_carrito,
         'total': total,
+        'total_convertido': total_convertido,
+        'moneda_seleccionada': moneda_seleccionada,
     }
 
     return render(request, 'app/pago.html', context)
-
-
 
 def exit(request):
     logout(request)
@@ -107,7 +138,7 @@ def register(request):
 def agregar_producto(request, producto_id):
     carrito = Carrito(request)
     producto = Producto.objects.get(id=producto_id)
-    carrito.add(producto) 
+    carrito.add(producto,request) 
     next_url = request.GET.get('next', '/')
     return redirect(next_url)
 
@@ -150,7 +181,7 @@ def realizar_pedido(request):
             ProductoPedido.objects.create(pedido=pedido, producto=producto, cantidad=cantidad, total=subtotal)
 
             total_pedido += subtotal  
-
+        
 
         pedido.total = total_pedido
         pedido.save()
@@ -167,58 +198,106 @@ def realizar_pedido(request):
 def mis_pedidos(request):
     pedidos = Pedidos.objects.filter(cliente=request.user)
     siete = bcchapi.Siete(file="credenciales.txt")
-    fecha_actual = datetime.now().strftime("%Y-%m-%d")
+    fecha_actual = '2024-10-25'
 
     series_monedas = {
         "dolar": "F073.TCO.PRE.Z.D",
-        "euro": "F072.CLP.EUR.N.O.D", 
-        "libra": "F072.CLP.GBP.N.O.D",  
-        "yen": "F072.CLP.JPY.N.O.D" 
+        "euro": "F072.CLP.EUR.N.O.D",
+        "libra": "F072.CLP.GBP.N.O.D",
+        "yen": "F072.CLP.JPY.N.O.D"
     }
 
     valores_monedas = {}
-
 
     for moneda, serie in series_monedas.items():
         try:
             retcuadro = siete.cuadro(series=[serie], nombres=[moneda], desde=fecha_actual, hasta=fecha_actual)
             valor_moneda = retcuadro.iloc[0, 0]
-            print(f"Valor del {moneda}: {valor_moneda}")
+            if valor_moneda is None or valor_moneda <= 0:
+                raise ValueError(f"El valor de {moneda} no es válido.")
+            valores_monedas[moneda] = valor_moneda
+        except Exception as e:
+            print(f"Error al obtener el valor de {moneda}: {e}")
+            valores_monedas[moneda] = 1  # Valor por defecto si falla la API
 
+    # Calcular la conversión para cada pedido
+    for pedido in pedidos:
+        pedido.total_en_dolares = pedido.total / valores_monedas.get("dolar", 1)
+        pedido.total_en_euros = pedido.total / valores_monedas.get("euro", 1)
+        pedido.total_en_libras = pedido.total / valores_monedas.get("libra", 1)
+        pedido.total_en_yenes = pedido.total / valores_monedas.get("yen", 1)
+
+    # Moneda seleccionada para conversión
+    moneda_seleccionada = request.POST.get('moneda', 'dolar')
+    if moneda_seleccionada in valores_monedas:
+        for pedido in pedidos:
+            pedido.total_convertido = pedido.total / valores_monedas[moneda_seleccionada]
+            pedido.moneda_seleccionada = moneda_seleccionada
+
+    # Renderizar vista con contexto
+    return render(request, 'app/mis_pedidos.html', {
+        'pedidos': pedidos,
+        'valores_monedas': valores_monedas,
+        'moneda_seleccionada': moneda_seleccionada,
+    })
+
+
+@permission_required('app.change_pedidos')
+def listar_pedidos(request):
+    # Crear instancia de API del Banco Central
+    siete = bcchapi.Siete(file="credenciales.txt")
+    fecha_actual = '2024-10-25'
+
+    
+    # Diccionario con las series de monedas
+    series_monedas = {
+        "dolar": "F073.TCO.PRE.Z.D",
+        "euro": "F072.CLP.EUR.N.O.D",
+        "libra": "F072.CLP.GBP.N.O.D",
+        "yen": "F072.CLP.JPY.N.O.D"
+    }
+
+    # Obtener valores actuales de cada moneda
+    valores_monedas = {}
+    for moneda, serie in series_monedas.items():
+        try:
+            # Realizar solicitud a la API para obtener el valor de la moneda actual
+            retcuadro = siete.cuadro(series=[serie], nombres=[moneda], desde=fecha_actual, hasta=fecha_actual)
+            valor_moneda = retcuadro.iloc[0, 0]
+            
+            # Validar que el valor de la moneda sea válido
             if valor_moneda is None or valor_moneda <= 0:
                 raise ValueError(f"El valor de {moneda} no es válido.")
             
             valores_monedas[moneda] = valor_moneda
         except Exception as e:
+            # En caso de error, asignar el valor por defecto de 1
             print(f"Error al obtener el valor de {moneda}: {e}")
-            valores_monedas[moneda] = 1 
-
+            valores_monedas[moneda] = 1
+    
+    # Obtener todos los pedidos y sus productos
+    pedidos = Pedidos.objects.all()
     for pedido in pedidos:
+        pedido.productos = ProductoPedido.objects.filter(pedido=pedido)
+        # Convertir totales de pedido a otras monedas
         pedido.total_en_dolares = pedido.total / valores_monedas["dolar"]
         pedido.total_en_euros = pedido.total / valores_monedas["euro"]
         pedido.total_en_libras = pedido.total / valores_monedas["libra"]
         pedido.total_en_yenes = pedido.total / valores_monedas["yen"]
 
-    moneda_seleccionada = request.POST.get('moneda', 'dolar') 
+    # Obtener la moneda seleccionada en el formulario y realizar la conversión correspondiente
+    moneda_seleccionada = request.POST.get('moneda', 'dolar')  # Dólar por defecto
     if moneda_seleccionada in valores_monedas:
         for pedido in pedidos:
             total_convertido = pedido.total / valores_monedas[moneda_seleccionada]
             pedido.total_convertido = total_convertido
             pedido.moneda_seleccionada = moneda_seleccionada
-
-    return render(request, 'app/mis_pedidos.html', {'pedidos': pedidos, 'valores_monedas': valores_monedas})
-
-
-
-@permission_required('app.change_pedidos')
-def listar_pedidos(request):
-
-    pedidos = Pedidos.objects.all()
-
-    for pedido in pedidos:
-        pedido.productos = ProductoPedido.objects.filter(pedido=pedido)
-
-    return render(request, 'app/listar_pedidos.html', {'pedidos': pedidos})
+    
+    # Pasar los datos a la plantilla
+    context = {
+        'pedidos': pedidos,
+    }
+    return render(request, 'app/listar_pedidos.html', context)
 
 
 @permission_required('app.change_pedidos')
@@ -274,15 +353,14 @@ def pagar_pedido(request, pedido_id):
     transaction = Transaction(options)
 
     try:
-        # Crear la transacción con la URL de retorno correcta
+        
         response = transaction.create(
             buy_order=str(pedido.id),
             session_id=request.session.session_key,
             amount=pedido.total,
-            return_url=request.build_absolute_uri(reverse('pago_exitoso'))  # Asegúrate de usar reverse
+            return_url=request.build_absolute_uri(reverse('pago_exitoso'))  
         )
 
-        # Imprimir la URL para verificar
         print(f"Redirecting to: {response['url']}?token_ws={response['token']}")
         return redirect(f"{response['url']}?token_ws={response['token']}")
     except Exception as e:
@@ -293,20 +371,20 @@ def pagar_pedido(request, pedido_id):
 
 @login_required
 def pago_exitoso(request):
-    token_ws = request.GET.get('token_ws')  # Obtener el token de la URL
-    transaction = Transaction(options)  # Asegúrate de que 'options' esté definido
-    result = transaction.commit(token_ws)  # Realiza la transacción con el token
+    token_ws = request.GET.get('token_ws')  
+    transaction = Transaction(options) 
+    result = transaction.commit(token_ws)  
 
     if result['status'] == 'AUTHORIZED':
-        # Aquí se supone que el ID del pedido está en 'buy_order'
-        pedido_id = int(result['buy_order'])  # Convierte a entero
-        pedido = get_object_or_404(Pedidos, id=pedido_id)  # Obtiene el pedido basado en el ID
-        pedido.estado = 'pagado'  # Asumiendo que el campo se llama 'estado'
+  
+        pedido_id = int(result['buy_order'])  
+        pedido = get_object_or_404(Pedidos, id=pedido_id)  
+        pedido.estado = 'pagado' 
         pedido.save()
-        # Renderiza la plantilla con el pedido
+
         return render(request, 'app/pago_exitoso.html', {'pedido': pedido})
     else:
-        return render(request, 'app/pago_fallido.html')  # Si no está autorizado, redirige a la página de error
+        return render(request, 'app/pago_fallido.html') 
 
 
 

@@ -33,6 +33,30 @@
     overflow-y: auto;
 }
 
+.items-p{
+    object-fit: cover;
+    border: 1px solid
+}
+.desc_item {
+    display: flex;
+    flex-direction: column; 
+    justify-content: space-between; /* Alinea elementos para ocupar el espacio total */
+    height: 300px; /* Ajusta según necesites */
+    border: 1px solid #ccc; /* Solo para visualización */
+    padding: 10px; /* Espaciado interno */
+}
+.desc_item h3 {
+    margin: 0; /* Elimina márgenes por defecto */
+    padding: 5px 0; /* Espaciado uniforme entre el título y el botón */
+}
+
+.desc_item img {
+    width: 100%; /* Ajusta al contenedor */
+    height: 150px; /* Ajusta la altura como necesites */
+    object-fit: cover; /* Mantiene la proporción de la imagen */
+}
+
+
 .product-image {
     width: 100% !important;
     height: 400px !important;

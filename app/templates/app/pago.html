@@ -1,8 +1,9 @@
 {% include "app/base/header.html" %}
 {% load humanize %}
+
 {% block js %}
 <script>
-    function ConfirmarPedido(formId){
+    function ConfirmarPedido(formId) {
         Swal.fire({
             "title": "¿Confirmar pedido?",
             "text": "Al aceptar su pedido, este pasará a ser revisado por un vendedor",
@@ -12,12 +13,24 @@
             "confirmButtonText": "Sí, confirmar pedido",
         }).then((result) => {
             if (result.isConfirmed) {
-                document.getElementById(formId).submit(); // Envía el formulario
+                document.getElementById(formId).submit();
             }
         });
     }
 </script>
 {% endblock %}
+
+<form method="post" class="mb-3">
+    {% csrf_token %}
+    <label for="moneda">Selecciona la moneda:</label>
+    <select name="moneda" id="moneda">
+        <option value="dolar">Dólar ($)</option>
+        <option value="euro">Euro (€)</option>
+        <option value="libra">Libra (£)</option>
+        <option value="yen">Yen (¥)</option>
+    </select>
+    <button type="submit" class="btn btn-primary">Convertir</button>
+</form>
 
 <main>
     <div align="center">
@@ -27,7 +40,7 @@
         <table class="table table-bordered">
             <thead>
                 <tr>
-                    <th scope="row" colspan="4" class="text-center">Resumen</th>
+                    <th colspan="5" class="text-center">Resumen</th>
                 </tr>
                 <tr>
                     <th scope="col"></th>
@@ -37,28 +50,40 @@
                 </tr>
             </thead>
             <tbody>
-                {% if request.session.carrito %}
-                {% for key, value in request.session.carrito.items %}
-                <tr>
-                    <td><img src="{{ value.imagen }}" alt="{{ value.nombre }}" style="width: 50px; height: auto;"></td>
-                    <td>{{ value.nombre }}</td>
-                    <td align="right">{{ value.cantidad }}</td>
-                    <td align="right">${{ value.acumulado|intcomma }}</td>
-                </tr>
-                {% endfor %}
+                {% if productos %}
+                    {% for item in productos %}
+                        <tr>
+                            <td><img src="{{ item.producto.img.url }}" alt="{{ item.producto.nombre }}" style="width: 50px; height: auto;"></td>
+                            <td>{{ item.producto.nombre }}</td>
+                            <td align="right">{{ item.cantidad }}</td>
+                            <td align="right">${{ item.producto.precio|intcomma }}</td>
+                        </tr>
+                    {% endfor %}
                 {% else %}
-                <tr>
-                    <td colspan="4">
-                        <div class="alert alert-danger text-center">Sin Producto</div>
-                    </td>
-                </tr>
+                    <tr>
+                        <td colspan="5" class="text-center">
+                            <div class="alert alert-danger">Sin Producto</div>
+                        </td>
+                    </tr>
                 {% endif %}
             </tbody>
         </table>
         <hr>
     </div>
 
-    <h3 align="right">Total: ${{ total }}</h3>
+    <h3 align="center">Total: ${{ total|intcomma }}</h3>
+    <h3 align="center">
+        {% if total_convertido %}
+            Total Convertido: ${{ total_convertido|floatformat:2 }}
+            {% if moneda_seleccionada == 'dolar' %} $
+            {% elif moneda_seleccionada == 'euro' %} €
+            {% elif moneda_seleccionada == 'libra' %} £
+            {% elif moneda_seleccionada == 'yen' %} ¥
+            {% endif %}
+        {% else %}
+            No convertido
+        {% endif %}
+    </h3>
 
     <form id="pedidoForm" method="POST" action="{% url 'realizar_pedido' %}">
         {% csrf_token %}
@@ -73,11 +98,10 @@
             </select>
         </div>
         <br>
-        
         <div align="center"> 
-            <a href="#" onclick="ConfirmarPedido('pedidoForm')" class="btn btn-primary"> Confirmar Pedido</a>
+            <a href="#" onclick="ConfirmarPedido('pedidoForm')" class="btn btn-primary">Confirmar Pedido</a>
         </div>
     </form>
-    
 </main>
+
 {% include "app/base/footer.html" %}
