@@ -198,7 +198,7 @@ def realizar_pedido(request):
 def mis_pedidos(request):
     pedidos = Pedidos.objects.filter(cliente=request.user)
     siete = bcchapi.Siete(file="credenciales.txt")
-    fecha_actual = '2024-10-25'
+    fecha_actual = '2024-10-29'
 
     series_monedas = {
         "dolar": "F073.TCO.PRE.Z.D",
@@ -218,23 +218,20 @@ def mis_pedidos(request):
             valores_monedas[moneda] = valor_moneda
         except Exception as e:
             print(f"Error al obtener el valor de {moneda}: {e}")
-            valores_monedas[moneda] = 1  # Valor por defecto si falla la API
+            valores_monedas[moneda] = 1  
 
-    # Calcular la conversión para cada pedido
     for pedido in pedidos:
         pedido.total_en_dolares = pedido.total / valores_monedas.get("dolar", 1)
         pedido.total_en_euros = pedido.total / valores_monedas.get("euro", 1)
         pedido.total_en_libras = pedido.total / valores_monedas.get("libra", 1)
         pedido.total_en_yenes = pedido.total / valores_monedas.get("yen", 1)
 
-    # Moneda seleccionada para conversión
     moneda_seleccionada = request.POST.get('moneda', 'dolar')
     if moneda_seleccionada in valores_monedas:
         for pedido in pedidos:
             pedido.total_convertido = pedido.total / valores_monedas[moneda_seleccionada]
             pedido.moneda_seleccionada = moneda_seleccionada
 
-    # Renderizar vista con contexto
     return render(request, 'app/mis_pedidos.html', {
         'pedidos': pedidos,
         'valores_monedas': valores_monedas,
@@ -244,12 +241,10 @@ def mis_pedidos(request):
 
 @permission_required('app.change_pedidos')
 def listar_pedidos(request):
-    # Crear instancia de API del Banco Central
     siete = bcchapi.Siete(file="credenciales.txt")
-    fecha_actual = '2024-10-25'
+    fecha_actual = '2024-10-29'
 
     
-    # Diccionario con las series de monedas
     series_monedas = {
         "dolar": "F073.TCO.PRE.Z.D",
         "euro": "F072.CLP.EUR.N.O.D",
@@ -257,43 +252,39 @@ def listar_pedidos(request):
         "yen": "F072.CLP.JPY.N.O.D"
     }
 
-    # Obtener valores actuales de cada moneda
     valores_monedas = {}
     for moneda, serie in series_monedas.items():
         try:
-            # Realizar solicitud a la API para obtener el valor de la moneda actual
             retcuadro = siete.cuadro(series=[serie], nombres=[moneda], desde=fecha_actual, hasta=fecha_actual)
             valor_moneda = retcuadro.iloc[0, 0]
             
-            # Validar que el valor de la moneda sea válido
+
             if valor_moneda is None or valor_moneda <= 0:
                 raise ValueError(f"El valor de {moneda} no es válido.")
             
             valores_monedas[moneda] = valor_moneda
         except Exception as e:
-            # En caso de error, asignar el valor por defecto de 1
+
             print(f"Error al obtener el valor de {moneda}: {e}")
             valores_monedas[moneda] = 1
     
-    # Obtener todos los pedidos y sus productos
+
     pedidos = Pedidos.objects.all()
     for pedido in pedidos:
         pedido.productos = ProductoPedido.objects.filter(pedido=pedido)
-        # Convertir totales de pedido a otras monedas
         pedido.total_en_dolares = pedido.total / valores_monedas["dolar"]
         pedido.total_en_euros = pedido.total / valores_monedas["euro"]
         pedido.total_en_libras = pedido.total / valores_monedas["libra"]
         pedido.total_en_yenes = pedido.total / valores_monedas["yen"]
 
-    # Obtener la moneda seleccionada en el formulario y realizar la conversión correspondiente
-    moneda_seleccionada = request.POST.get('moneda', 'dolar')  # Dólar por defecto
+    moneda_seleccionada = request.POST.get('moneda', 'dolar') 
     if moneda_seleccionada in valores_monedas:
         for pedido in pedidos:
             total_convertido = pedido.total / valores_monedas[moneda_seleccionada]
             pedido.total_convertido = total_convertido
             pedido.moneda_seleccionada = moneda_seleccionada
     
-    # Pasar los datos a la plantilla
+
     context = {
         'pedidos': pedidos,
     }

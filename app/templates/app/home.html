@@ -24,7 +24,7 @@
                         icon: "{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'success' %}success{% else %}info{% endif %}",
                         title: "{{ message }}",
                         showConfirmButton: false,
-                        timer: 1500
+                        timer: 1000
                     });
                 {% endfor %}
             });
@@ -144,7 +144,6 @@
                                 <img src="{{ p.img.url }}" alt="Image" class="product-image">
                             {% endif %}
                             <figcaption class="align-items-center justify-content-center">
-                                <h3>FERRAMAS©</h3>
                             </figcaption>                 
                         </figure>
                     <div class="desc_item">
