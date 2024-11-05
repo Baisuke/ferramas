@@ -4,6 +4,7 @@ from django.http import HttpResponse
 from http.client import HTTPResponse
 from django.shortcuts import render, redirect ,  get_object_or_404
 from app.carrito import Carrito
+from .utils import obtener_valores_monedas
 from .models import Producto, Pedidos, ProductoPedido
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required, permission_required
@@ -59,7 +60,7 @@ def pago(request):
     carrito = Carrito(request)
     total = 0
 
-    # Configuración para la API y valores de monedas
+
     siete = bcchapi.Siete(file="credenciales.txt")
     fecha_actual = datetime.now().strftime("%Y-%m-%d")
     series_monedas = {
@@ -70,7 +71,6 @@ def pago(request):
     }
     valores_monedas = {}
 
-    # Obtener y validar valores de las monedas
     for moneda, serie in series_monedas.items():
         try:
             retcuadro = siete.cuadro(series=[serie], nombres=[moneda], desde=fecha_actual, hasta=fecha_actual)
@@ -80,9 +80,8 @@ def pago(request):
             valores_monedas[moneda] = valor_moneda
         except Exception as e:
             print(f"Error al obtener el valor de {moneda}: {e}")
-            valores_monedas[moneda] = 1  # Valor predeterminado si ocurre error
+            valores_monedas[moneda] = 1 
 
-    # Calcular el total de los productos en el carrito
     productos_del_carrito = []
     for item in carrito:
         producto = item['producto']
@@ -95,12 +94,12 @@ def pago(request):
             'subtotal': subtotal,
         })
 
-    # Moneda seleccionada por el usuario y conversión del total acumulado
-    moneda_seleccionada = request.POST.get('moneda', 'dolar')  # Predeterminado a 'dolar'
-    total_convertido = total / valores_monedas.get(moneda_seleccionada, 1)
-    total_convertido = round(total_convertido, 2)  # Redondeo a 2 decimales
 
-    # Contexto para el template
+    moneda_seleccionada = request.POST.get('moneda', 'dolar')  
+    total_convertido = total / valores_monedas.get(moneda_seleccionada, 1)
+    total_convertido = round(total_convertido, 2) 
+
+
     context = {
         'pedidos': pedidos,
         'valores_monedas': valores_monedas,
@@ -194,7 +193,6 @@ def realizar_pedido(request):
 
     return render(request, 'app/pago.html')
 
-@login_required
 def mis_pedidos(request):
     pedidos = Pedidos.objects.filter(cliente=request.user)
     siete = bcchapi.Siete(file="credenciales.txt")
@@ -209,6 +207,7 @@ def mis_pedidos(request):
 
     valores_monedas = {}
 
+    # Obtener los valores de cambio de las monedas
     for moneda, serie in series_monedas.items():
         try:
             retcuadro = siete.cuadro(series=[serie], nombres=[moneda], desde=fecha_actual, hasta=fecha_actual)
@@ -220,17 +219,20 @@ def mis_pedidos(request):
             print(f"Error al obtener el valor de {moneda}: {e}")
             valores_monedas[moneda] = 1  
 
-    for pedido in pedidos:
-        pedido.total_en_dolares = pedido.total / valores_monedas.get("dolar", 1)
-        pedido.total_en_euros = pedido.total / valores_monedas.get("euro", 1)
-        pedido.total_en_libras = pedido.total / valores_monedas.get("libra", 1)
-        pedido.total_en_yenes = pedido.total / valores_monedas.get("yen", 1)
+    moneda_seleccionada = request.POST.get('moneda', 'none')
+    total_convertido_global = {}
 
-    moneda_seleccionada = request.POST.get('moneda', 'dolar')
-    if moneda_seleccionada in valores_monedas:
+    if moneda_seleccionada != "none" and moneda_seleccionada in valores_monedas:
         for pedido in pedidos:
             pedido.total_convertido = pedido.total / valores_monedas[moneda_seleccionada]
             pedido.moneda_seleccionada = moneda_seleccionada
+            total_convertido_global[pedido.id] = pedido.total_convertido
+    else:
+        for pedido in pedidos:
+            pedido.total_convertido = None
+            pedido.moneda_seleccionada = None
+
+    request.session['total_convertido'] = total_convertido_global
 
     return render(request, 'app/mis_pedidos.html', {
         'pedidos': pedidos,
@@ -239,35 +241,8 @@ def mis_pedidos(request):
     })
 
 
-@permission_required('app.change_pedidos')
 def listar_pedidos(request):
-    siete = bcchapi.Siete(file="credenciales.txt")
-    fecha_actual = '2024-10-29'
-
-    
-    series_monedas = {
-        "dolar": "F073.TCO.PRE.Z.D",
-        "euro": "F072.CLP.EUR.N.O.D",
-        "libra": "F072.CLP.GBP.N.O.D",
-        "yen": "F072.CLP.JPY.N.O.D"
-    }
-
-    valores_monedas = {}
-    for moneda, serie in series_monedas.items():
-        try:
-            retcuadro = siete.cuadro(series=[serie], nombres=[moneda], desde=fecha_actual, hasta=fecha_actual)
-            valor_moneda = retcuadro.iloc[0, 0]
-            
-
-            if valor_moneda is None or valor_moneda <= 0:
-                raise ValueError(f"El valor de {moneda} no es válido.")
-            
-            valores_monedas[moneda] = valor_moneda
-        except Exception as e:
-
-            print(f"Error al obtener el valor de {moneda}: {e}")
-            valores_monedas[moneda] = 1
-    
+    valores_monedas = obtener_valores_monedas()
 
     pedidos = Pedidos.objects.all()
     for pedido in pedidos:
@@ -277,19 +252,10 @@ def listar_pedidos(request):
         pedido.total_en_libras = pedido.total / valores_monedas["libra"]
         pedido.total_en_yenes = pedido.total / valores_monedas["yen"]
 
-    moneda_seleccionada = request.POST.get('moneda', 'dolar') 
-    if moneda_seleccionada in valores_monedas:
-        for pedido in pedidos:
-            total_convertido = pedido.total / valores_monedas[moneda_seleccionada]
-            pedido.total_convertido = total_convertido
-            pedido.moneda_seleccionada = moneda_seleccionada
-    
-
     context = {
         'pedidos': pedidos,
     }
     return render(request, 'app/listar_pedidos.html', context)
-
 
 @permission_required('app.change_pedidos')
 def confirmar_pedido(request, pedido_id):
@@ -341,14 +307,19 @@ def perfil_usuario(request):
 @login_required
 def pagar_pedido(request, pedido_id):
     pedido = get_object_or_404(Pedidos, id=pedido_id)
-    transaction = Transaction(options)
 
+    total_convertido_global = request.session.get('total_convertido', {})
+    total_convertido = total_convertido_global.get(str(pedido_id), pedido.total) 
+
+    total_convertido = int(total_convertido)
+
+    transaction = Transaction(options)
+    
     try:
-        
         response = transaction.create(
             buy_order=str(pedido.id),
             session_id=request.session.session_key,
-            amount=pedido.total,
+            amount=total_convertido,
             return_url=request.build_absolute_uri(reverse('pago_exitoso'))  
         )
 
@@ -358,7 +329,7 @@ def pagar_pedido(request, pedido_id):
         print(f"Error al crear la transacción: {e}")
         messages.error(request, "Ocurrió un error al procesar el pago. Por favor, inténtelo de nuevo.")
         return redirect('mis_pedidos')
-    
+
 
 @login_required
 def pago_exitoso(request):

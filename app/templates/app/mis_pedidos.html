@@ -6,6 +6,7 @@
             {% csrf_token %}
             <label for="moneda">Selecciona la moneda:</label>
             <select name="moneda" id="moneda">
+                <option value="none" {% if moneda_seleccionada == "none" %}selected{% endif %}>Sin Conversión</option>
                 <option value="dolar" {% if moneda_seleccionada == "dolar" %}selected{% endif %}>Dólar ($)</option>
                 <option value="euro" {% if moneda_seleccionada == "euro" %}selected{% endif %}>Euro (€)</option>
                 <option value="libra" {% if moneda_seleccionada == "libra" %}selected{% endif %}>Libra (£)</option>
