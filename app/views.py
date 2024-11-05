@@ -333,6 +333,7 @@ def pagar_pedido(request, pedido_id):
 
 @login_required
 def pago_exitoso(request):
+    
     token_ws = request.GET.get('token_ws')  
     transaction = Transaction(options) 
     result = transaction.commit(token_ws)  

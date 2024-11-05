@@ -1,1 +1,4 @@
 pillow
+crispy-bootstrap5
+bcchapi
+transbank-sdk
